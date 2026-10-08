@@ -5,6 +5,22 @@ const api = axios.create({
     withCredentials: true,
 });
 
+// Attach JWT token to every authentication request
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem("token");
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    },
+);
+
 export async function register({ username, email, password }) {
     try {
         const response = await api.post("/api/auth/register", {
@@ -13,9 +29,12 @@ export async function register({ username, email, password }) {
             password,
         });
 
+        // Save JWT for production authentication
+        localStorage.setItem("token", response.data.token);
+
         return response.data;
     } catch (err) {
-        console.log(err);
+        throw err;
     }
 }
 
@@ -25,6 +44,9 @@ export async function login({ email, password }) {
             email,
             password,
         });
+
+        // Save JWT for production authentication
+        localStorage.setItem("token", response.data.token);
 
         return response.data;
     } catch (err) {
@@ -36,8 +58,13 @@ export async function logout() {
     try {
         const response = await api.get("/api/auth/logout");
 
+        localStorage.removeItem("token");
+
         return response.data;
-    } catch (err) {}
+    } catch (err) {
+        localStorage.removeItem("token");
+        throw err;
+    }
 }
 
 export async function getMe() {
@@ -46,6 +73,6 @@ export async function getMe() {
 
         return response.data;
     } catch (err) {
-        console.log(err);
+        throw err;
     }
 }

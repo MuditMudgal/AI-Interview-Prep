@@ -37,11 +37,17 @@ async function registerUserController(req, res) {
     });
 
     const token = jwt.sign(
-        { id: user._id, username: user.username },
+        {
+            id: user._id,
+            username: user.username,
+        },
         process.env.JWT_SECRET,
-        { expiresIn: "1d" },
+        {
+            expiresIn: "1d",
+        },
     );
 
+    // Keep cookie authentication for local development / existing setup
     res.cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -50,6 +56,7 @@ async function registerUserController(req, res) {
 
     res.status(201).json({
         message: "User registered successfully",
+        token,
         user: {
             id: user._id,
             username: user.username,
@@ -83,11 +90,17 @@ async function loginUserController(req, res) {
     }
 
     const token = jwt.sign(
-        { id: user._id, username: user.username },
+        {
+            id: user._id,
+            username: user.username,
+        },
         process.env.JWT_SECRET,
-        { expiresIn: "1d" },
+        {
+            expiresIn: "1d",
+        },
     );
 
+    // Keep cookie authentication for local development / existing setup
     res.cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -96,6 +109,7 @@ async function loginUserController(req, res) {
 
     res.status(200).json({
         message: "User loggedIn successfully.",
+        token,
         user: {
             id: user._id,
             username: user.username,
@@ -106,11 +120,15 @@ async function loginUserController(req, res) {
 
 /**
  * @name logoutUserController
- * @description clear token from user cookie and add the token in blacklist
- * @access public
+ * @description clear token and add the token to blacklist
+ * @access Public
  */
 async function logoutUserController(req, res) {
-    const token = req.cookies.token;
+    const authHeader = req.headers.authorization;
+
+    const token = authHeader?.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : req.cookies.token;
 
     if (token) {
         await tokenBlacklistModel.create({ token });

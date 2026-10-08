@@ -5,8 +5,25 @@ const api = axios.create({
     withCredentials: true,
 });
 
+// Attach JWT token to every interview request
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem("token");
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    },
+);
+
 /**
- * @description Service to generate interview report based on user self description, resume and job description.
+ * @description Service to generate interview report
+ * based on user self description, resume and job description.
  */
 export const generateInterviewReport = async ({
     jobDescription,
@@ -14,6 +31,7 @@ export const generateInterviewReport = async ({
     resumeFile,
 }) => {
     const formData = new FormData();
+
     formData.append("jobDescription", jobDescription);
     formData.append("selfDescription", selfDescription);
     formData.append("resume", resumeFile);
@@ -37,7 +55,8 @@ export const getInterviewReportById = async (interviewId) => {
 };
 
 /**
- * @description Service to get all interview reports of logged in user.
+ * @description Service to get all interview reports
+ * of logged in user.
  */
 export const getAllInterviewReports = async () => {
     const response = await api.get("/api/interview/");
@@ -46,7 +65,8 @@ export const getAllInterviewReports = async () => {
 };
 
 /**
- * @description Service to generate resume pdf based on user self description, resume content and job description.
+ * @description Service to generate resume PDF
+ * based on interview report.
  */
 export const generateResumePdf = async ({ interviewReportId }) => {
     const response = await api.post(
